@@ -8,34 +8,29 @@ class HTMLNode:
     def to_html(self):
         raise NotImplementedError("to_html method not implemented")
 
-    """
-    If self.props is:
-    {"href": "https://www.google.com", "target": "_blank"}
-    
-    Then self.props_to_html() should return:
-     href="https://www.google.com" target="_blank"
-    """
-
     def props_to_html(self):
-        if self.props is None:
+        if self.props == None:
             return ""
         html_attr = ""
-        for key in self.props.keys():
+        for key in self.props:
             attr_str = f' {key}="{self.props[key]}"'
             html_attr += attr_str
-        return "".join(html_attr)
-
-    """
-    __repr__(self) - Give yourself a way to print an HTMLNode object and see its tag, value, children, and props. 
-    This will be useful for your debugging.
-
-    def __repr__(self):
-        return f"TextNode({self.text}, {self.text_type}, {self.url})"
-        self.tag = tag
-        self.value = value
-        self.children = children
-        self.props = props
-    """
+        return html_attr
 
     def __repr__(self):
         return f"HTMLNode({self.tag}, {self.value}, {self.children}, {self.props})"
+
+
+class LeafNode(HTMLNode):
+    def __init__(self, tag, value, props=None):
+        super().__init__(tag, value, None, props)
+
+    def to_html(self):
+        if self.value is None:
+            raise ValueError("Invalid HTML: no value")
+        if self.tag is None:
+            return self.value
+        return f"<{self.tag}{self.props_to_html()}>{self.value}</{self.tag}>"
+
+    def __repr__(self):
+        return f"LeafNode({self.tag}, {self.value}, {self.props})"
