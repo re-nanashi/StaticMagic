@@ -41,44 +41,44 @@ def split_nodes_image(old_nodes):
             new_nodes.append(old_node)
             continue
         text = old_node.text
-        matches = extract_markdown_images(old_node.text)
-        split_nodes = []
+        matches = extract_markdown_images(text)
         for image_tup in matches:
             sections = text.split(f"![{image_tup[0]}]({image_tup[1]})", 1)
-            if sections.count("") == len(sections):
-                split_nodes.append(
-                    TextNode(matches[0][0], TextType.text_type_image, matches[0][1]))
+            if all(section == "" for section in sections):
+                new_nodes.append(
+                    TextNode(image_tup[0], TextType.text_type_image, image_tup[1]))
                 continue
             i = 1 if sections[0] == "" else 0
-            split_nodes.extend([TextNode(sections[i], TextType.text_type_text), TextNode(
-                image_tup[0], TextType.text_type_image,  image_tup[1])])
+            new_nodes.extend([
+                TextNode(sections[i], TextType.text_type_text),
+                TextNode(image_tup[0], TextType.text_type_image, image_tup[1])
+            ])
             text = sections[i + 1]
-            if len(extract_markdown_images(text)) == 0 and text != "":
-                split_nodes.append(TextNode(text, TextType.text_type_text))
-        new_nodes.extend(split_nodes)
+            if text and not extract_markdown_images(text):
+                new_nodes.append(TextNode(text, TextType.text_type_text))
     return new_nodes
 
 
 def split_nodes_link(old_nodes):
     new_nodes = []
     for old_node in old_nodes:
-        matches = extract_markdown_links(old_node.text)
-        if len(matches) == 0:
+        if old_node.text_type != TextType.text_type_text:
             new_nodes.append(old_node)
             continue
         text = old_node.text
-        split_nodes = []
+        matches = extract_markdown_links(text)
         for link_tup in matches:
             sections = text.split(f"[{link_tup[0]}]({link_tup[1]})", 1)
-            if sections.count("") == len(sections):
-                split_nodes.append(
-                    TextNode(matches[0][0], TextType.text_type_link, matches[0][1]))
+            if all(section == "" for section in sections):
+                new_nodes.append(
+                    TextNode(link_tup[0], TextType.text_type_link, link_tup[1]))
                 continue
             i = 1 if sections[0] == "" else 0
-            split_nodes.extend([TextNode(sections[i], TextType.text_type_text), TextNode(
-                link_tup[0], TextType.text_type_link,  link_tup[1])])
+            new_nodes.extend([
+                TextNode(sections[i], TextType.text_type_text),
+                TextNode(link_tup[0], TextType.text_type_link, link_tup[1])
+            ])
             text = sections[i + 1]
-            if len(extract_markdown_links(text)) == 0 and text != "":
-                split_nodes.append(TextNode(text, TextType.text_type_text))
-        new_nodes.extend(split_nodes)
+            if text and not extract_markdown_links(text):
+                new_nodes.append(TextNode(text, TextType.text_type_text))
     return new_nodes
