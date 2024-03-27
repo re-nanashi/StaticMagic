@@ -1,42 +1,84 @@
 from textnode import (TextNode, TextType)
+import re
 
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
     res_new_nodes = []
-    for node in old_nodes:
-        if not isinstance(node, TextNode):
-            res_new_nodes.append(node)
+    for old_node in old_nodes:
+        if old_node.text_type != TextType.text_type_text:
+            res_new_nodes.append(old_node)
             continue
-
-        text = node.text
-        new_nodes = []
-        start = 0
-        i = 0
-        while i < len(text):
-            if text[i:i+len(delimiter)] == delimiter:
-                new_nodes.append(
-                    TextNode(text[start: i], TextType.text_type_text))
-                # Set start to the index of the starting char that is inside the delimiter
-                i += len(delimiter)
-                start = i
-                # Loop until the ending char of the string inside delimiter is reached
-                while i < len(text) and text[i:i+len(delimiter)] != delimiter:
-                    i += 1
-                # If matching closing delimiter not found, raise an exception
-                if i == len(text):
-                    raise Exception(
-                        f"Invalid markdown sytanx: No matching closing delimiter found for delimiter at index: {start}")
-                # Matching closing delimiter is found:
-                new_nodes.append(TextNode(text[start: i], text_type))
-                # Then, set the start after the closing delimiter
-                i += len(delimiter)
-                start = i
+        split_nodes = []
+        sections = old_node.text.split(delimiter)
+        if len(sections) % 2 == 0:
+            raise ValueError("Invalid markdown, formatted section not closed")
+        for i in range(len(sections)):
+            if sections[i] == "":
+                continue
+            if i % 2 == 0:
+                split_nodes.append(
+                    TextNode(sections[i], TextType.text_type_text))
             else:
-                i += 1
-                # Lastly, if we reaced the end of the text and an exception wasn't raised, we have to add the last substring
-                # of the original text and convert it into a textnode
-                if i == len(text):
-                    new_nodes.append(
-                        TextNode(text[start: i], TextType.text_type_text))
-        res_new_nodes.extend(new_nodes)
+                split_nodes.append(TextNode(sections[i], text_type))
+        res_new_nodes.extend(split_nodes)
     return res_new_nodes
+
+
+def extract_markdown_images(text):
+    matches = re.findall(r"!\[(.*?)\]\((.*?)\)", text)
+    return matches
+
+
+def extract_markdown_links(text):
+    matches = re.findall(r"\[(.*?)\]\((.*?)\)", text)
+    return matches
+
+
+def split_nodes_image(old_nodes):
+    new_nodes = []
+    for old_node in old_nodes:
+        if old_node.text_type != TextType.text_type_text:
+            new_nodes.append(old_node)
+            continue
+        text = old_node.text
+        matches = extract_markdown_images(old_node.text)
+        split_nodes = []
+        for image_tup in matches:
+            sections = text.split(f"![{image_tup[0]}]({image_tup[1]})", 1)
+            if sections.count("") == len(sections):
+                split_nodes.append(
+                    TextNode(matches[0][0], TextType.text_type_image, matches[0][1]))
+                continue
+            i = 1 if sections[0] == "" else 0
+            split_nodes.extend([TextNode(sections[i], TextType.text_type_text), TextNode(
+                image_tup[0], TextType.text_type_image,  image_tup[1])])
+            text = sections[i + 1]
+            if len(extract_markdown_images(text)) == 0 and text != "":
+                split_nodes.append(TextNode(text, TextType.text_type_text))
+        new_nodes.extend(split_nodes)
+    return new_nodes
+
+
+def split_nodes_link(old_nodes):
+    new_nodes = []
+    for old_node in old_nodes:
+        matches = extract_markdown_links(old_node.text)
+        if len(matches) == 0:
+            new_nodes.append(old_node)
+            continue
+        text = old_node.text
+        split_nodes = []
+        for link_tup in matches:
+            sections = text.split(f"[{link_tup[0]}]({link_tup[1]})", 1)
+            if sections.count("") == len(sections):
+                split_nodes.append(
+                    TextNode(matches[0][0], TextType.text_type_link, matches[0][1]))
+                continue
+            i = 1 if sections[0] == "" else 0
+            split_nodes.extend([TextNode(sections[i], TextType.text_type_text), TextNode(
+                link_tup[0], TextType.text_type_link,  link_tup[1])])
+            text = sections[i + 1]
+            if len(extract_markdown_links(text)) == 0 and text != "":
+                split_nodes.append(TextNode(text, TextType.text_type_text))
+        new_nodes.extend(split_nodes)
+    return new_nodes
