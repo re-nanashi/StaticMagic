@@ -41,21 +41,23 @@ def split_nodes_image(old_nodes):
             new_nodes.append(old_node)
             continue
         text = old_node.text
-        matches = extract_markdown_images(text)
-        for image_tup in matches:
+        images = extract_markdown_images(text)
+        if len(images) == 0:
+            new_nodes.append(old_node)
+            continue
+        for image_tup in images:
             sections = text.split(f"![{image_tup[0]}]({image_tup[1]})", 1)
-            if all(section == "" for section in sections):
+            if len(sections) != 2:
+                raise ValueError(
+                    "Invalid mardown syntax: Image section not closed")
+            if sections[0] != "":
                 new_nodes.append(
-                    TextNode(image_tup[0], TextType.text_type_image, image_tup[1]))
-                continue
-            i = 1 if sections[0] == "" else 0
-            new_nodes.extend([
-                TextNode(sections[i], TextType.text_type_text),
-                TextNode(image_tup[0], TextType.text_type_image, image_tup[1])
-            ])
-            text = sections[i + 1]
-            if text and not extract_markdown_images(text):
-                new_nodes.append(TextNode(text, TextType.text_type_text))
+                    TextNode(sections[0], TextType.text_type_text))
+            new_nodes.append(
+                TextNode(image_tup[0], TextType.text_type_image, image_tup[1]))
+            text = sections[1]
+        if text != "":
+            new_nodes.append(TextNode(text, TextType.text_type_text))
     return new_nodes
 
 
@@ -66,19 +68,33 @@ def split_nodes_link(old_nodes):
             new_nodes.append(old_node)
             continue
         text = old_node.text
-        matches = extract_markdown_links(text)
-        for link_tup in matches:
+        links = extract_markdown_links(text)
+        if len(links) == 0:
+            new_nodes.append(old_node)
+            continue
+        for link_tup in links:
             sections = text.split(f"[{link_tup[0]}]({link_tup[1]})", 1)
-            if all(section == "" for section in sections):
+            if len(sections) != 2:
+                raise ValueError(
+                    "Invalid mardown syntax: links section not closed")
+            if sections[0] != "":
                 new_nodes.append(
-                    TextNode(link_tup[0], TextType.text_type_link, link_tup[1]))
-                continue
-            i = 1 if sections[0] == "" else 0
-            new_nodes.extend([
-                TextNode(sections[i], TextType.text_type_text),
-                TextNode(link_tup[0], TextType.text_type_link, link_tup[1])
-            ])
-            text = sections[i + 1]
-            if text and not extract_markdown_links(text):
-                new_nodes.append(TextNode(text, TextType.text_type_text))
+                    TextNode(sections[0], TextType.text_type_text))
+            new_nodes.append(
+                TextNode(link_tup[0], TextType.text_type_link, link_tup[1]))
+            text = sections[1]
+        if text != "":
+            new_nodes.append(TextNode(text, TextType.text_type_text))
     return new_nodes
+
+
+def text_to_textnode(text):
+    node = TextNode(text, TextType.text_type_text)
+
+    bold = split_nodes_delimiter([node], "**", TextType.text_type_bold)
+    italic = split_nodes_delimiter(bold, "*", TextType.text_type_italic)
+    code = split_nodes_delimiter(italic, "`", TextType.text_type_code)
+    images = split_nodes_image(code)
+    links = split_nodes_link(images)
+
+    return links
