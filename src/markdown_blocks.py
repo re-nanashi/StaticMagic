@@ -75,7 +75,9 @@ def paragraph_block_to_html_node(paragraph_block):
 
 
 def heading_block_to_html_node(heading_block):
-    count = heading_block[:6].count("#")
+    count = heading_block[:7].count("#")
+    if count > 6:
+        raise ValueError(f"Invalid heading level: {count}")
     inline = heading_block.lstrip("# ")
     html_child_nodes = block_to_child_nodes(inline)
     return ParentNode(f"h{count}", html_child_nodes)
@@ -117,6 +119,8 @@ def quote_block_to_html_node(quote_block):
 
 
 def code_block_to_html_node(code_block):
+    if not code_block.startswith("```") or not code_block.endswith("```"):
+        raise ValueError("Invalid code block")
     inline_code = code_block[3:-3]
     html_child_nodes = block_to_child_nodes(inline_code)
     html_parent_node = ParentNode("code", html_child_nodes)
@@ -141,4 +145,6 @@ def markdown_to_html_node(markdown_text):
                 html_nodes.append(heading_block_to_html_node(block))
             case BlockType.block_type_paragraph:
                 html_nodes.append(paragraph_block_to_html_node(block))
+            case _:
+                raise ValueError("Invalid block type")
     return ParentNode("div", html_nodes)
