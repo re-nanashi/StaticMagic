@@ -44,3 +44,21 @@ def generate_page(from_path, template_path, dest_path):
     output_file = open(dest_path, "w")
     output_file.write(html_template)
     output_file.close()
+
+
+def generate_pages_r(dir_path_content, template_path, dest_dir_path):
+    if not os.path.exists(dest_dir_path):
+        os.mkdir(dest_dir_path)
+    for filename in os.listdir(dir_path_content):
+        src_path = os.path.join(dir_path_content, filename)
+        if os.path.isfile(src_path) and filename[-3:] == ".md":
+            dest_path = os.path.join(
+                dest_dir_path, f"{filename.split('.')[0]}.html")
+            try:
+                # TODO: Create new file with +1 number to the filename if filename already exists
+                generate_page(src_path, template_path, dest_path)
+            except:
+                raise Exception("Error occured while generating file.")
+        else:
+            dest_path = os.path.join(dest_dir_path, filename)
+            generate_pages_r(src_path, template_path, dest_path)
