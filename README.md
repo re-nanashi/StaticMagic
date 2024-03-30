@@ -8,7 +8,7 @@ Follow these steps to use Static Magic:
 
 1. **Clone the Repository**: Clone this repository to your local machine using the following command:
    ```bash
-   git clone https://github.com/re-nanashi/StaticMagic.git
+   git clone https://github.com/re-nanashi/static-magic.git
    ```
 2. **Create Markdown Files**: Create your Markdown files and put them inside the `content` folder within the cloned repository. These Markdown files will be converted into HTML pages.
 
