@@ -2,7 +2,7 @@ import os
 import shutil
 
 from copystatic import copy_files_r
-from gencontent import generate_page
+from gencontent import generate_pages_r
 
 
 def copy_static_files():
@@ -23,8 +23,8 @@ def copy_static_files():
 
 def main():
     copy_static_files()
-    generate_page("./content/index.md", "./template.html",
-                  "./public/index.html")
+    generate_pages_r("./content", "./template.html",
+                     "./public")
 
 
 main()
